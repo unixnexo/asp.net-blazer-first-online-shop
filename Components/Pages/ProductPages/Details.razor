@@ -1,0 +1,54 @@
+﻿@page "/products/details"
+@attribute [StreamRendering]
+@using Microsoft.EntityFrameworkCore
+@using OnlineShop.Models
+@inject IDbContextFactory<OnlineShop.Data.AppDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>@product?.Name</PageTitle>
+
+<div class="mt-5">
+    @if (product is null)
+    {
+        <p><em>در حال پردازش ...</em></p>
+    }
+    else {
+        <div class="d-flex mx-auto bg-white shadow-lg rounded-3 overflow-hidden">
+            <div class="mx-3 p-3 text-black d-flex flex-column" style="white-space: nowrap;">
+                <p>@product.Name</p>
+                <p style="white-space: normal;">@product.Description</p>
+                <p>@product.Price.ToString("N0") تومان</p>
+                <p>موجودی: @product.Stock</p>
+                <div class="mt-auto font-monospace fs-6 mb-2">
+                    <hr />
+                    <p class="p-0 m-0">@product.PersianCreatedDate</p>
+                    <p class="p-0 m-0 ">@product.CreatedDate</p>
+                </div>
+                <a href="@($"/products/edit?id={product.Id}")"><i class="bi bi-pencil"></i></a>
+            </div>
+            <div>
+                <div class="mx-auto" style="width: 300px; height: 300px; overflow: hidden;">
+                    <img src="@product.Image" style="width: 100%; object-fit: cover;" alt="عکص محصول" />
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private Product? product;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        product = await context.Products.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (product is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+}

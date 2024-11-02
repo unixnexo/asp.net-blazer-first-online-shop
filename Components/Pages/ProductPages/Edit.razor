@@ -1,0 +1,106 @@
+﻿@page "/products/edit"
+@rendermode InteractiveServer
+@attribute [StreamRendering]
+@using Microsoft.EntityFrameworkCore
+@using OnlineShop.Models
+@inject IDbContextFactory<OnlineShop.Data.AppDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>@Product?.Name</PageTitle>
+
+<h1 class="mt-5">ویرایش کردن @Product?.Name</h1>
+<hr />
+@if (Product is null)
+{
+    <p><em>در حال پردازش ...</em></p>
+}
+else
+{
+<div class="row mb-5">
+    <div class="col-md-4">
+        <EditForm method="post" Model="Product" OnValidSubmit="UpdateProduct" FormName="edit" Enhance>
+            <DataAnnotationsValidator />
+            @* <ValidationSummary class="text-danger" /> *@
+            <div class="mb-3">
+                <label for="name" class="form-label">نام کالا:</label>
+                <InputText id="name" @bind-Value="Product.Name" class="form-control" />
+                <ValidationMessage For="() => Product.Name" class="text-danger" />
+            </div>
+            <div class="mb-3">
+                <label for="image" class="form-label">آدرس عکس کالا:</label>
+                <InputText id="image" @bind-Value="Product.Image" class="form-control" />
+                <ValidationMessage For="() => Product.Image" class="text-danger" />
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">توضیحات:</label>
+                <InputTextArea id="description" @bind-Value="Product.Description" class="form-control" />
+                <ValidationMessage For="() => Product.Description" class="text-danger" />
+            </div>
+            <div class="mb-3">
+                <label for="price" class="form-label">قیمت:</label>
+                <InputNumber id="price" @bind-Value="Product.Price" class="form-control" />
+                <ValidationMessage For="() => Product.Price" class="text-danger" />
+            </div>
+            <div class="mb-3">
+                <label for="stock" class="form-label">موجودی:</label>
+                <InputNumber id="stock" @bind-Value="Product.Stock" class="form-control" />
+                <ValidationMessage For="() => Product.Stock" class="text-danger" />
+            </div>
+            <button type="submit" class="btn btn-primary">ویرایش محصول</button>
+            <a href="/" class="btn btn-danger">لغو</a>
+        </EditForm>
+    </div>
+</div>
+}
+
+
+@code {
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    private Product? Product { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        Product ??= await context.Products.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (Product is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    // To protect from overposting attacks, enable the specific properties you want to bind to.
+    // For more information, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task UpdateProduct()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Attach(Product!).State = EntityState.Modified;
+
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!ProductExists(Product!.Id))
+            {
+                NavigationManager.NavigateTo("notfound");
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        NavigationManager.NavigateTo("/");
+    }
+
+    private bool ProductExists(int id)
+    {
+        using var context = DbFactory.CreateDbContext();
+        return context.Products.Any(e => e.Id == id);
+    }
+}

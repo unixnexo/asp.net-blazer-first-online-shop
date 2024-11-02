@@ -1,0 +1,50 @@
+﻿@page "/products/delete"
+@attribute [StreamRendering]
+@using Microsoft.EntityFrameworkCore
+@using OnlineShop.Models
+@inject IDbContextFactory<OnlineShop.Data.AppDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>حذف کردن کالا</PageTitle>
+
+<h1 class="mt-5">@product?.Name</h1>
+
+<p class="text-danger fw-bolder">آیا این محصول حذف شود؟</p>
+<div class="mb-5">
+    @if (product is null)
+    {
+        <p><em>در حال پردازش ...</em></p>
+    }
+    else {
+        <EditForm method="post" Model="product" OnValidSubmit="DeleteProduct" FormName="delete" Enhance>
+            <button type="submit" class="btn btn-danger" disabled="@(product is null)">حذف</button>
+            <a href="/" class="btn btn-primary">لغو</a>
+        </EditForm>
+    }
+</div>
+
+@code {
+    private Product? product;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        product = await context.Products.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (product is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    private async Task DeleteProduct()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Products.Remove(product!);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/");
+    }
+}
